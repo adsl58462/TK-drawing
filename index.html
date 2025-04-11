@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PK典藏卡包抽卡模擬器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .simulator-container {
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 24px;
+        }
+        
+        .stats-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .pity-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 15px;
+        }
+        
+        .stats-value {
+            font-weight: bold;
+        }
+        
+        .draw-button {
+            background-color: #2e8b57;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 12px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto 10px;
+            transition: background-color 0.3s;
+        }
+        
+        .draw-button:hover {
+            background-color: #226b43;
+        }
+
+        #clear-history-button {
+            background-color: #888;
+        }
+
+        #clear-history-button:hover {
+            background-color: #666;
+        }
+
+        .history-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .history-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .history-empty {
+            text-align: center;
+            color: #888;
+            padding: 15px;
+        }
+        
+        .history-list {
+            list-style-type: none;
+        }
+        
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .rare {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        
+        .rate-info {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .card-animation {
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="simulator-container">
+        <h1>PK典藏卡包抽卡模擬器</h1>
+        
+        <div class="stats-container">
+            <div class="pity-info">保底機制: 連續5抽未獲得稀有卡時，下次抽卡必定獲得稀有卡</div>
+            <div class="stats-row">
+                <div>總抽卡次數: <span id="total-draws" class="stats-value">0</span></div>
+                <div>獲得稀有卡: <span id="rare-obtained" class="stats-value">0</span></div>
+                <div>距離保底: <span id="pity-counter" class="stats-value">5</span>抽</div>
+            </div>
+        </div>
+
+        <button id="draw-button" class="draw-button">抽一次</button>
+        <button id="clear-history-button" class="draw-button">清空歷史</button>
+
+        <div class="history-title">抽卡歷史:</div>
+        <div class="history-container">
+            <div id="history-empty" class="history-empty">尚未抽卡</div>
+            <ul id="history-list" class="history-list"></ul>
+        </div>
+
+        <div class="rate-info">
+            <div>普通卡機率: 1.9417%</div>
+            <div>稀有卡機率: 0.9709%</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const cardData = [
+                { name: "典藏關羽", rate: 1.9417 },
+                { name: "典藏曹操", rate: 0.9709 },
+                { name: "典藏呂蒙", rate: 1.9417 },
+                { name: "典藏董卓", rate: 1.9417 },
+                { name: "典藏夏侯淵", rate: 1.9417 },
+                { name: "典藏呂布", rate: 1.9417 },
+                { name: "典藏馬超", rate: 1.9417 },
+                { name: "典藏黃忠", rate: 1.9417 },
+                { name: "典藏張飛", rate: 1.9417 },
+                { name: "典藏夏侯惇", rate: 1.9417 },
+                { name: "典藏顏良", rate: 1.9417 },
+                { name: "典藏文醜", rate: 1.9417 },
+                { name: "典藏張遼", rate: 0.9709 },
+                { name: "典藏黃蓋", rate: 1.9417 },
+                { name: "典藏太史慈", rate: 1.9417 },
+                { name: "典藏龐德", rate: 1.9417 },
+                { name: "典藏孟獲", rate: 1.9417 },
+                { name: "典藏郭嘉", rate: 1.9417 },
+                { name: "典藏司馬懿", rate: 0.9709 },
+                { name: "典藏孫堅", rate: 1.9417 },
+                { name: "典藏姜維", rate: 0.9709 },
+                { name: "典藏凌統", rate: 1.9417 },
+                { name: "典藏鄧艾", rate: 1.9417 },
+                { name: "典藏孫尚香", rate: 0.9709 },
+                { name: "典藏貂蟬", rate: 1.9417 },
+                { name: "典藏黃月英", rate: 1.9417 },
+                { name: "典藏SP袁紹", rate: 0.9709 },
+                { name: "典藏呂玲綺", rate: 1.9417 },
+                { name: "典藏陳到", rate: 1.9417 },
+                { name: "典藏魏延", rate: 1.9417 },
+                { name: "典藏SP周瑜", rate: 1.9417 },
+                { name: "典藏SP諸葛亮", rate: 1.9417 },
+                { name: "典藏木鹿大王", rate: 1.9417 },
+                { name: "典藏王平", rate: 1.9417 },
+                { name: "典藏甘寧", rate: 1.9417 },
+                { name: "典藏滿寵", rate: 1.9417 },
+                { name: "典藏SP朱儁", rate: 0.9709 },
+                { name: "典藏關興", rate: 1.9417 },
+                { name: "典藏張苞", rate: 1.9417 },
+                { name: "典藏SP郭嘉", rate: 0.9709 },
+                { name: "典藏田豐", rate: 1.9417 },
+                { name: "典藏SP呂蒙", rate: 0.9709 },
+                { name: "典藏王雙", rate: 1.9417 },
+                { name: "典藏SP荀彧", rate: 0.9709 },
+                { name: "典藏法正", rate: 1.9417 },
+                { name: "典藏周泰", rate: 0.9709 },
+                { name: "典藏鍾會", rate: 1.9417 },
+                { name: "典藏SP關羽", rate: 0.9709 },
+                { name: "典藏SP龐德", rate: 1.9417 },
+                { name: "典藏諸葛格", rate: 1.9417 },
+                { name: "典藏嚴顏", rate: 1.9417 },
+                { name: "典藏SP皇甫嵩", rate: 0.9709 },
+                { name: "典藏SP張寶", rate: 1.9417 },
+                { name: "典藏SP曹真", rate: 0.9709 },
+                { name: "典藏蔡文姬", rate: 1.9417 },
+                { name: "典藏SP馬超", rate: 0.9709 },
+                { name: "典藏SP許褚", rate: 1.9417 },
+                { name: "典藏SP黃月英", rate: 1.9417 },
+                { name: "典藏張春華", rate: 0.9709 }
+            ];
+
+            const commonCards = cardData.filter(card => card.rate === 1.9417);
+            const rareCards = cardData.filter(card => card.rate === 0.9709);
+
+            let pityCounter = 0;
+            let totalDraws = 0;
+            let rareObtained = 0;
+
+            const drawButton = document.getElementById('draw-button');
+            const clearHistoryButton = document.getElementById('clear-history-button');
+            const totalDrawsElement = document.getElementById('total-draws');
+            const rareObtainedElement = document.getElementById('rare-obtained');
+            const pityCounterElement = document.getElementById('pity-counter');
+            const historyList = document.getElementById('history-list');
+            const historyEmpty = document.getElementById('history-empty');
+
+            function drawCard() {
+                if (pityCounter === 5) {
+                    const rare = rareCards[Math.floor(Math.random() * rareCards.length)];
+                    addToHistory(rare.name, true, true);
+                    pityCounter = 0;
+                    rareObtained++;
+                } else {
+                    const isRare = Math.random() < 0.09709;
+                    if (isRare) {
+                        const rare = rareCards[Math.floor(Math.random() * rareCards.length)];
+                        addToHistory(rare.name, true, false);
+                        pityCounter = 0;
+                        rareObtained++;
+                    } else {
+                        const common = commonCards[Math.floor(Math.random() * commonCards.length)];
+                        addToHistory(common.name, false, false);
+                        pityCounter++;
+                    }
+                }
+                totalDraws++;
+                updateStats();
+            }
+
+            function addToHistory(cardName, isRare, isPity) {
+                historyEmpty.style.display = 'none';
+
+                const li = document.createElement('li');
+                li.className = 'history-item card-animation';
+                if (isRare) li.classList.add('rare');
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = cardName;
+
+                const statusSpan = document.createElement('span');
+                if (isRare) statusSpan.textContent = isPity ? '✨保底!' : '✨稀有!';
+
+                li.appendChild(nameSpan);
+                li.appendChild(statusSpan);
+
+                historyList.insertBefore(li, historyList.firstChild);
+                if (historyList.children.length > 10) {
+                    historyList.removeChild(historyList.lastChild);
+                }
+            }
+
+            function updateStats() {
+                totalDrawsElement.textContent = totalDraws;
+                rareObtainedElement.textContent = rareObtained;
+                pityCounterElement.textContent = 5 - pityCounter;
+            }
+
+            // ✅ 清空抽卡歷史
+            clearHistoryButton.addEventListener('click', function () {
+                historyList.innerHTML = '';
+                historyEmpty.style.display = 'block';
+            });
+
+            drawButton.addEventListener('click', drawCard);
+        });
+    </script>
+</body>
+</html>
